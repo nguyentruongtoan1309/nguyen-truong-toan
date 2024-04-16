@@ -1,68 +1,59 @@
-import {
-  JsonController,
-  Param,
-  Get,
-  Post,
-  Body,
-  Put,
-  Delete,
-  QueryParams,
-  HttpCode,
-  NotFoundError,
-} from 'routing-controllers';
-
-import { UserDTO, CreateUserDTO, UpdateUserDTO, ResponseUserDTO, ResponseDTO, PaginationParams } from '../../dtos';
+import { controller, httpDelete, httpGet, httpPost, httpPut, params } from 'inversify-express-utils';
+import { inject } from 'inversify';
+import { UserDTO, CreateUserDTO, UpdateUserDTO, ResponseUserDTO, ResponseDTO } from '../../dtos';
 import { User } from '../../models';
 import { UserService } from '../../services';
+import { TYPES } from '../../core/types';
+import { Request, Response } from 'express';
+import { plainToClass } from 'class-transformer';
 
-@JsonController('/api/v1/healthCheck')
+@controller('/v1')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(@inject(TYPES.UserService) private userService: UserService) {}
 
-  @Get()
-  async getAll(@QueryParams() paginationParams: PaginationParams): Promise<ResponseDTO<Array<ResponseUserDTO>>> {
+  @httpGet('/users')
+  async getAll(req: Request, res: Response) {
     const users = await this.userService.getAll();
     const usersDTO: Array<ResponseUserDTO> = users.map(UserDTO.fromModel);
     const responseDTO = new ResponseDTO<Array<ResponseUserDTO>>(usersDTO);
-    return responseDTO;
+    return res.json(responseDTO);
   }
 
-  @Get('/:id')
-  async get(@Param('id') id: string): Promise<ResponseDTO<ResponseUserDTO>> {
-    const user = await this.userService.getById(id);
+  @httpGet('/users/:id')
+  async get(req: Request, res: Response) {
+    const user = await this.userService.getById(req.params.id);
     if (!user) {
-      return Promise.reject(new NotFoundError('User not found'));
+      return res.json({ message: 'User not found' });
     }
-    return new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(user));
+    return res.json(new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(user)));
   }
 
-  @HttpCode(201)
-  @Post()
-  async create(@Body({ required: true }) userDTO: CreateUserDTO): Promise<ResponseDTO<ResponseUserDTO>> {
+  @httpPost('/users')
+  async create(req: Request, res: Response) {
+    const userDTO = plainToClass(CreateUserDTO, req.body);
     let createdUser: User;
     try {
       const user = userDTO.toModel();
       createdUser = await this.userService.create(user);
 
-      return new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(createdUser));
+      return res.json(new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(createdUser)));
     } catch (error) {
-      return Promise.reject(error);
+      return res.status(500).json({ message: 'Create user failed!' });
     }
   }
 
-  @Put('/:id')
-  async update(
-    @Param('id') id: string,
-    @Body({ required: true }) userDTO: UpdateUserDTO,
-  ): Promise<ResponseDTO<ResponseUserDTO>> {
+  @httpPut('/users/:id')
+  async update(req: Request, res: Response) {
+    const id = req.params.id;
+    const userDTO = plainToClass(UpdateUserDTO, req.body);
     const user: User = userDTO.toModel();
     const updatedUser = await this.userService.update(id, user);
-    return new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(updatedUser));
+    return res.json(new ResponseDTO<ResponseUserDTO>(UserDTO.fromModel(updatedUser)));
   }
 
-  @Delete('/:id')
-  async delete(@Param('id') id: string): Promise<ResponseDTO<boolean>> {
-    const status = await this.userService.delete(id);
-    return new ResponseDTO<boolean>(status);
+  @httpDelete('/users/:id')
+  async delete(req: Request, res: Response) {
+    const status = await this.userService.delete(req.params.id);
+    return res.json(new ResponseDTO<boolean>(status));
   }
 }

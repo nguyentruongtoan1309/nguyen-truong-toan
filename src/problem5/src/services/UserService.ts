@@ -1,15 +1,18 @@
-import { Service } from 'typedi';
-import { InjectRepository } from 'typeorm-typedi-extensions';
-
+import { inject, injectable } from 'inversify';
 import { User } from '../models';
 import { UserRepository } from '../repositories';
+import { TYPES } from '../core/types';
+import connectDB from '../db';
+import { Repository } from 'typeorm';
 
-@Service()
+@injectable()
 export class UserService {
+  private userRepository: Repository<User>;
   constructor(
-    @InjectRepository(UserRepository)
-    private userRepository: UserRepository,
-  ) {}
+  ) {
+    // Await the userRepository initialization
+    this.userRepository = connectDB.getRepository(User);
+  }
 
   public async getAll(): Promise<User[]> {
     try {

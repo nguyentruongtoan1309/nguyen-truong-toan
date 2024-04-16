@@ -1,16 +1,15 @@
-import { JsonController, Get } from 'routing-controllers';
+import { controller, httpGet } from 'inversify-express-utils';
+import { Request, Response } from 'express';
 
-import { HealthCheckDTO } from '../../dtos';
-
-@JsonController('/')
+@controller('/v1')
 export class HomeController {
-  @Get()
-  public home(): any {
-    return { description: 'API is Running' };
+  @httpGet('/')
+  public home(req: Request, res: Response) {
+    return res.json({ description: 'API is Running' });
   }
 
-  @Get('/api/v1/healthCheck')
-  public healthCheck(): HealthCheckDTO {
-    return { status: 'healthy' };
+  @httpGet('/health-check')
+  public healthCheck(req: Request, res: Response) {
+    return res.json({ status: 'OK' });
   }
 }

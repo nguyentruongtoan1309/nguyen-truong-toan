@@ -1,5 +1,5 @@
 import { IsEmail } from 'class-validator';
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, Unique } from 'typeorm';
 
 import { BaseModel } from './BaseModel';
 
@@ -10,5 +10,6 @@ export class User extends BaseModel {
 
   @Column()
   @IsEmail()
+  @Unique('email_user', ['email'])
   email: string;
 }

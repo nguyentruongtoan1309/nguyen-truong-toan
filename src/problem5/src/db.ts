@@ -1,6 +1,11 @@
 import config from './config';
+import { DataSource } from 'typeorm';
 
-export default {
+// Using environment variables
+import { config as loadDotEnv } from 'dotenv';
+loadDotEnv();
+
+const connectDB = new DataSource({
   type: config.db.type as never,
   host: config.db.host,
   port: config.db.port,
@@ -12,8 +17,21 @@ export default {
   synchronize: config.db.synchronize,
   entities: [`${__dirname}/models/*.{ts,js}`],
   migrations: [`${__dirname}/migrations/*.{ts,js}`],
-  cli: {
-    entitiesDir: 'src/models',
-    migrationsDir: 'src/migrations',
-  },
-};
+  ssl: false,
+  // extra: {
+  //   ssl: {
+  //     rejectUnauthorized: false,
+  //   },
+  // },
+});
+
+connectDB
+  .initialize()
+  .then(() => {
+    console.log(`Data Source has been initialized`);
+  })
+  .catch((err) => {
+    console.error(`Data Source initialization error`, err);
+  });
+
+export default connectDB;
